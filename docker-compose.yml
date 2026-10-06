@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  wordpress:
+    build:
+      context: .
+      args:
+        UID: "1000"
+        GID: "1000"
+    container_name: wp-old-php
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./public_html:/var/www/html
+      - ./logs:/var/log/apache2
+      - ./php.ini:/usr/local/etc/php/conf.d/zz-custom.ini:ro
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    depends_on:
+      - db
+    networks:
+      - wp-old
+
+  db:
+    image: mysql:5.7
+    container_name: wp-old-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - wp-old
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: wp-old-pma
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - wp-old
+
+networks:
+  wp-old:
+    driver: bridge
+
+volumes:
+  db_data:
